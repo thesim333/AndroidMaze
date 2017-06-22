@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    >
+    <item
+        android:id="@+id/nav_load"
+        android:icon="@drawable/ic_unarchive_black_48dp"
+        android:checkable="false"
+        android:title="@string/load_resource" />
+    <item
+        android:id="@+id/nav_load_saved"
+        android:icon="@drawable/ic_unarchive_black_48dp"
+        android:checkable="false"
+        android:title="@string/load_save" />
+    <item
+        android:id="@+id/nav_save"
+        android:icon="@drawable/ic_archive_black_48dp"
+        android:checkable="false"
+        android:title="@string/save_game" />
+    <item
+        android:id="@+id/nav_solution"
+        android:icon="@drawable/ic_wb_incandescent_black_48dp"
+        android:title="@string/solution"
+        android:checkable="true"/>
+</menu>

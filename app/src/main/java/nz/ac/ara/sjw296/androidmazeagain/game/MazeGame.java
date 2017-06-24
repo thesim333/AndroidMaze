@@ -8,7 +8,7 @@ import nz.ac.ara.sjw296.androidmazeagain.communal.Wall;
  * Created by Sim on 22/06/2017.
  */
 
-public class MazeGame implements Savable, Loadable {
+public class MazeGame implements Savable, Loadable, Game {
     //walls stored in [row][col] format
     protected Wall[][] topWalls;
     protected Wall[][] leftWalls;

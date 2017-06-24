@@ -28,8 +28,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/button_pause"
-        android:visibility="visible"
-        app:layout_constraintLeft_toLeftOf="parent"
+        android:visibility="invisible"
+        app:layout_constraintRight_toRightOf="@+id/mazeView"
         app:layout_constraintTop_toTopOf="parent" />
 
     <nz.ac.ara.sjw296.androidmazeagain.GameSolutionView

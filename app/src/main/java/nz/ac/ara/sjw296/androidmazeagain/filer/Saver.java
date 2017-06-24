@@ -1,5 +1,7 @@
 package nz.ac.ara.sjw296.androidmazeagain.filer;
 
+import android.content.Context;
+
 import nz.ac.ara.sjw296.androidmazeagain.game.Savable;
 
 /**
@@ -7,9 +9,9 @@ import nz.ac.ara.sjw296.androidmazeagain.game.Savable;
  */
 
 public interface Saver {
-    void save(Savable game);
+    void save(Savable game, Context context);
 
-    void save(Savable game, String fileName);
+    void save(Savable game, String fileName, Context context);
 
-    void save(Savable game, String fileName, String levelName);
+    void save(Savable game, String fileName, String levelName, Context context);
 }

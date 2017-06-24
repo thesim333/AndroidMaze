@@ -20,6 +20,12 @@ public class MazePoint implements Point {
         this.col = col;
     }
 
+    public MazePoint(String point) {
+        String[] rowCol = point.split(", ");
+        row = Integer.parseInt(rowCol[0]);
+        col = Integer.parseInt(rowCol[1]);
+    }
+
     public int getRow() {
         return this.row;
     }

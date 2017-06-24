@@ -1,5 +1,7 @@
 package nz.ac.ara.sjw296.androidmazeagain.filer;
 
+import android.content.Context;
+
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -37,6 +39,8 @@ import nz.ac.ara.sjw296.androidmazeagain.game.Loadable;
 import nz.ac.ara.sjw296.androidmazeagain.game.MazeGame;
 import nz.ac.ara.sjw296.androidmazeagain.game.Savable;
 
+import static java.security.AccessController.getContext;
+
 /**
  * Created by Sim on 22/06/2017.
  */
@@ -48,22 +52,22 @@ public class Filer implements Loader, Saver {
     protected final char NOTHING = 'o';
 
     @Override
-    public void save(Savable game) {
-        this.saveToXmlFile(game, this.SAVE_FILE, game.getLevelName());
+    public void save(Savable game, Context context) {
+        this.saveToXmlFile(game, this.SAVE_FILE, game.getLevelName(), context);
     }
 
     @Override
-    public void save(Savable game, String fileName) {
-        this.saveToXmlFile(game, fileName, game.getLevelName());
+    public void save(Savable game, String fileName, Context context) {
+        this.saveToXmlFile(game, fileName, game.getLevelName(), context);
     }
 
     @Override
-    public void save(Savable game, String fileName, String levelName) {
-        this.saveToXmlFile(game, fileName, levelName);
+    public void save(Savable game, String fileName, String levelName, Context context) {
+        this.saveToXmlFile(game, fileName, levelName, context);
     }
 
-    protected void saveToXmlFile(Savable game, String fileName, String level) {
-        this.saveGame(game, this.haveFileWantDoc(fileName), level, fileName);
+    protected void saveToXmlFile(Savable game, String fileName, String level, Context context) {
+        this.saveGame(game, this.haveFileWantDoc(fileName, context), level, fileName, context);
     }
 
     protected boolean fileExists(String filePath) {
@@ -88,16 +92,16 @@ public class Filer implements Loader, Saver {
         return null;
     }
 
-    protected Document haveFileWantDoc(String fileName) {
+    protected Document haveFileWantDoc(String fileName, Context context) {
         try {
-            return this.getXmlDoc(new FileInputStream(fileName));
+            return this.getXmlDoc(context.openFileInput(fileName));
         }
         catch (IOException e) {
             return this.createXmlFile();
         }
     }
 
-    protected void saveGame(Savable game, Document doc, String levelName, String fileName) {
+    protected void saveGame(Savable game, Document doc, String levelName, String fileName, Context context) {
         Element rootElement = doc.getDocumentElement();
         Element mazeElement = doc.createElement("maze");
         NodeList nodes = doc.getElementsByTagName("maze");
@@ -123,10 +127,10 @@ public class Filer implements Loader, Saver {
         this.addPositionNode(doc, positionsElement, "minotaur", game.wheresMinotaur());
         this.addPositionNode(doc, positionsElement, "exit", game.wheresExit());
 
-        this.saveXmlToFile(doc, fileName);
+        this.saveXmlToFile(doc, fileName, context);
     }
 
-    protected void saveXmlToFile(Document doc, String fileName) {
+    protected void saveXmlToFile(Document doc, String fileName, Context context) {
         try {
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
             Transformer transformer = transformerFactory.newTransformer();
@@ -140,13 +144,17 @@ public class Filer implements Loader, Saver {
             transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
             transformer.transform(source, result);
 
-            File file = new File(fileName);
-            FileOutputStream fos = new FileOutputStream(file);
-
+//            File file = new File(fileName);
+//            FileOutputStream fos = new FileOutputStream(file);
+//
+//            String xmlString = result.getWriter().toString();
+//            fos.write(xmlString.getBytes());
+//            fos.flush();
+//            fos.close();
+            FileOutputStream oStream = context.openFileOutput(fileName, Context.MODE_PRIVATE);
             String xmlString = result.getWriter().toString();
-            fos.write(xmlString.getBytes());
-            fos.flush();
-            fos.close();
+            oStream.write(xmlString.getBytes());
+            oStream.close();
         }
         catch (IOException |TransformerException e) {
             e.printStackTrace();
@@ -319,9 +327,9 @@ public class Filer implements Loader, Saver {
     }
 
     @Override
-    public void loadSave(Loadable game, String fileName) {
+    public void loadSave(Loadable game, String fileName, Context context) {
         try {
-            InputStream inputStream = new FileInputStream(fileName);
+            InputStream inputStream = context.openFileInput(fileName);
             this.loadLevelOrLoadSaveByNumber(game, 0, getXmlDoc(inputStream));
         }
         catch (IOException e) {
@@ -330,14 +338,14 @@ public class Filer implements Loader, Saver {
     }
 
     @Override
-    public void loadSave(Loadable game) {
-        loadSave(game, this.SAVE_FILE);
+    public void loadSave(Loadable game, Context context) {
+        loadSave(game, this.SAVE_FILE, context);
     }
 
     @Override
-    public void loadSave(Loadable game, String fileName, String level) {
+    public void loadSave(Loadable game, String fileName, String level, Context context) {
         try {
-            InputStream inputStream = new FileInputStream(fileName);
+            InputStream inputStream = context.openFileInput(fileName);
             this.loadLevelOrLoadSaveByName(game, level, getXmlDoc(inputStream));
         }
         catch (IOException e) {

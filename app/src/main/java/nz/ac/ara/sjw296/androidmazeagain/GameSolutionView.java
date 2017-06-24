@@ -5,7 +5,6 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
-import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewTreeObserver;
@@ -18,26 +17,27 @@ import nz.ac.ara.sjw296.androidmazeagain.game.Direction;
  * Created by Sim on 22/06/2017.
  */
 
-public class GameSolutionView extends View {
+public class GameSolutionView extends View implements SolutionView {
     protected boolean showSolution = false;
     protected List<Direction> theSolution;
     protected String orientation;
     private CommunalImageTools imageTools = new CommunalImageTools();
-    private int imageSize;
-    private int imageSpace;
+    private int imageSize = 84;
+    private int imageSpace = 8;
+    private final String VERTICAL = "Vertical";
+    private final String HORIZONTAL = "Horizontal";
+    float startingPoint = imageSpace + imageSize / 2;
 
     public GameSolutionView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        imageSize = 0; //// TODO: 23/06/2017
-        imageSpace = 0; // TODO: 23/06/2017  
         final ViewTreeObserver obs = this.getViewTreeObserver();
         obs.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
             @Override
             public boolean onPreDraw() {
                 if (getMeasuredHeight() > getMeasuredWidth()) {
-                    orientation = "Vertical";
+                    orientation = VERTICAL;
                 } else {
-                    orientation = "Horizontal";
+                    orientation = HORIZONTAL;
                 }
                 return true;
             }
@@ -46,6 +46,7 @@ public class GameSolutionView extends View {
 
     public void setSolution(List<Direction> solution) {
         theSolution = solution;
+        showSolution = true;
     }
 
     public boolean haveSolution() {
@@ -58,6 +59,11 @@ public class GameSolutionView extends View {
 
     public void popAndDraw() {
         theSolution.remove(0);
+        invalidate();
+    }
+
+    public void stopShowingSolution() {
+        showSolution = false;
         invalidate();
     }
     
@@ -73,7 +79,7 @@ public class GameSolutionView extends View {
         return imageTools.decodeSampledBitmapFromResource(getResources(), resource, imageSize, imageSize);
     }
 
-    protected Matrix getImageRotationMatrix(Direction d) {
+    protected Matrix getImageRotationMatrix(Direction d, float x, float y) {
         float deg = 0;
         switch (d) {
             case DOWN:
@@ -88,16 +94,27 @@ public class GameSolutionView extends View {
         }
 
         Matrix matrix = new Matrix();
-        matrix.setRotate(deg, imageSize / 2, imageSize / 2);
+        matrix.reset();
+        matrix.postTranslate(imageSize / 2, imageSize / 2);
+        matrix.postRotate(deg);
+        matrix.postTranslate(x, y);
         return matrix;
     }
 
     private float getImageX(int count) {
-        //// TODO: 23/06/2017
+        if (orientation == VERTICAL) {
+            return startingPoint;
+        } else {
+            return startingPoint + (imageSpace + imageSize) * count;
+        }
     }
 
     private float getImageY(int count) {
-        //// TODO: 23/06/2017
+        if (orientation == HORIZONTAL) {
+            return startingPoint;
+        } else {
+            return startingPoint + (imageSpace + imageSize) * count;
+        }
     }
 
     @Override
@@ -109,7 +126,7 @@ public class GameSolutionView extends View {
             for (Direction d:
                     theSolution) {
                 Bitmap image = getImageForDirection(d);
-                Matrix matrix = getImageRotationMatrix(d);
+                Matrix matrix = getImageRotationMatrix(d, getImageX(count), getImageY(count));
                 canvas.drawBitmap(image, matrix, null);
                 count++;
             }

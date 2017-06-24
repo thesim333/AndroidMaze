@@ -16,6 +16,7 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
 
 import java.io.InputStream;
 
@@ -24,19 +25,27 @@ import nz.ac.ara.sjw296.androidmazeagain.communal.Point;
 import nz.ac.ara.sjw296.androidmazeagain.communal.Wall;
 import nz.ac.ara.sjw296.androidmazeagain.filer.Filer;
 import nz.ac.ara.sjw296.androidmazeagain.filer.Loader;
+import nz.ac.ara.sjw296.androidmazeagain.filer.Saver;
 import nz.ac.ara.sjw296.androidmazeagain.game.Direction;
 import nz.ac.ara.sjw296.androidmazeagain.game.Game;
 import nz.ac.ara.sjw296.androidmazeagain.game.Loadable;
 import nz.ac.ara.sjw296.androidmazeagain.game.MazeGame;
+import nz.ac.ara.sjw296.androidmazeagain.game.Savable;
 import nz.ac.ara.sjw296.androidmazeagain.solver.Sandbox;
+import nz.ac.ara.sjw296.androidmazeagain.solver.SandboxGame;
 import nz.ac.ara.sjw296.androidmazeagain.swipe.OnSwipeListener;
 
 public class MainActivity extends AppCompatActivity implements View.OnTouchListener {
     protected Loader myLoader = new Filer();
     protected Game myGame;
-    protected Sandbox mySolver;
-    protected MazeGameView theView;
+    protected Sandbox mySolver = new SandboxGame();
+    protected MazeView theView;
+    protected SolutionView solutionView;
     private GestureDetector detector;
+    final String CURRENT = "Current";
+    final String MINOTAUR = "Minotaur";
+    final String THESEUS = "Theseus";
+    final String SOLUTION = "Solution";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,7 +57,10 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         toolbar.setTitleTextColor(Color.WHITE);
         setSupportActionBar(toolbar);
         toolbar.setBackgroundColor(Color.parseColor("#555555"));
-        theView = (MazeGameView) findViewById(R.id.mazeView);
+        MazeGameView view = (MazeGameView) findViewById(R.id.mazeView);
+        view.setOnTouchListener(this);
+        theView = view;
+        solutionView = (SolutionView)findViewById(R.id.solutionView);
         detector = new GestureDetector(this, new OnSwipeListener() {
             @Override
             public boolean onSwipe(SwipeDirection direction) {
@@ -67,13 +79,22 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                 return true;
             }
         });
-        theView.setOnTouchListener(this);
         final Button button = (Button) findViewById(R.id.pause_button);
         button.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 playMove(Direction.PASS);
             }
         });
+
+        if (savedInstanceState != null) {
+            if (savedInstanceState.containsKey(MINOTAUR)) {
+                loadLevelFromResourceFile(savedInstanceState.getInt(CURRENT));
+                Loadable game = (Loadable) myGame;
+                game.addMinotaur(new MazePoint(savedInstanceState.getString(MINOTAUR)));
+                game.addTheseus(new MazePoint(savedInstanceState.getString(THESEUS)));
+            }
+            // TODO: 24/06/2017 solution
+        }
     }
 
     @Override
@@ -95,18 +116,61 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         if (id == R.id.nav_load) {
             makeLevelSelectDialog();
         } else if (id == R.id.nav_save) {
-
+            if (gameIsLive()) {
+                saveThisGame();
+            }
         } else if (id == R.id.nav_load_saved) {
-
+            // TODO: 23/06/2017  
         } else if (id == R.id.nav_solution) {
             if (item.isChecked()) {
                 item.setChecked(false);
+                turnSolutionOff();
+
             } else {
                 item.setChecked(true);
+                turnSolutionOn();
             }
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        //game
+        if (gameIsLive()) {
+            int currentGame = myLoader.getCurrentLevel();
+            String theseusCurrent = myGame.wheresTheseus().toString();
+            String minotaurCurrent = myGame.wheresMinotaur().toString();
+            //MenuItem solution = (MenuItem) findViewById(R.id.nav_solution);
+            outState.putInt(CURRENT, currentGame);
+            outState.putString(MINOTAUR, minotaurCurrent);
+            outState.putString(THESEUS, theseusCurrent);
+            //outState.putBoolean(SOLUTION, solution.isChecked());
+            // TODO: 24/06/2017 solution
+        }
+    }
+
+    protected void saveThisGame() {
+        Saver saver = new Filer();
+        saver.save((Savable)myGame, this);
+    }
+
+    protected void turnSolutionOn() {
+        if (gameIsLive()) {
+            mySolver.createGameState((Savable)myGame);
+            mySolver.begin();
+            // TODO: 23/06/2017
+        }
+    }
+
+    protected void turnSolutionOff() {
+        solutionView.stopShowingSolution();
+    }
+
+    protected boolean gameIsLive() {
+        return (myGame != null && !myGame.isLost() && !myGame.isWon());
     }
 
     protected void makeLevelSelectDialog() {
@@ -116,6 +180,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
                 loadLevelFromResourceFile(i);
+                startGame();
             }
         });
         AlertDialog alert = builder.create();
@@ -133,10 +198,10 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         Loadable theGame = new MazeGame();
         myLoader.loadLevel(theGame, level, inputStream);
         myGame = (Game)theGame;
-        startGame();
     }
 
     protected void startGame() {
+        showPauseButton();
         int rows = myGame.getDepthDown();
         int cols = myGame.getWidthAcross();
         theView.newGameSetup(rows, cols);
@@ -152,15 +217,20 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             }
         }
 
-        theView.setTheseusMood(Mood.NORMAL);
+        theView.setTheseusMood(myGame.isWon() ? Mood.HAPPY : Mood.NORMAL);
         theView.setTheseusPosition(myGame.wheresTheseus());
         theView.setMinotaur(myGame.wheresMinotaur());
         theView.setMoves(myGame.getMoveCount());
         theView.invalidate();
     }
 
+    protected void showPauseButton() {
+        Button pause = (Button) findViewById(R.id.pause_button);
+        pause.setVisibility(View.VISIBLE);
+    }
+
     protected void playMove(Direction direction) {
-        if (myGame != null && !myGame.isLost() && !myGame.isWon()) {
+        if (gameIsLive()) {
             if (myGame.moveTheseus(direction)) {
                 setTheseus();
                 if (myGame.isWon()) {
@@ -228,5 +298,5 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         alert.show();
     }
 
-    protected
+
 }

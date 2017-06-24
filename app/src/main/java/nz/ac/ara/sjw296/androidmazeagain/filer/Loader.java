@@ -1,5 +1,7 @@
 package nz.ac.ara.sjw296.androidmazeagain.filer;
 
+import android.content.Context;
+
 import java.io.InputStream;
 
 import nz.ac.ara.sjw296.androidmazeagain.game.Loadable;
@@ -13,11 +15,11 @@ public interface Loader {
 
     void loadLevel(Loadable game, int level, InputStream inputStream);
 
-    void loadSave(Loadable game, String fileName);
+    void loadSave(Loadable game, String fileName, Context context);
 
-    void loadSave(Loadable game);
+    void loadSave(Loadable game, Context context);
 
-    void loadSave(Loadable game, String fileName, String level);
+    void loadSave(Loadable game, String fileName, String level, Context context);
 
     String[] getLevelNamesFromFile(InputStream inputStream);
 

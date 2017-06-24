@@ -5,8 +5,6 @@ import android.content.DialogInterface;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.GestureDetector;
@@ -16,7 +14,6 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
-import android.widget.Toast;
 
 import java.io.InputStream;
 
@@ -41,18 +38,23 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     protected Sandbox mySolver = new SandboxGame();
     protected MazeView theView;
     protected SolutionView solutionView;
-    private GestureDetector detector;
+    protected GestureDetector detector;
     final String CURRENT = "Current";
     final String MINOTAUR = "Minotaur";
     final String THESEUS = "Theseus";
     final String SOLUTION = "Solution";
+    protected Toolbar toolbar;
+    protected MenuItem nav_loadSave;
+    protected MenuItem nav_save;
+    protected MenuItem nav_solutions;
+    protected boolean checkSolutionOnCreate = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        toolbar = (Toolbar) findViewById(R.id.toolbar);
         toolbar.setTitle("Escape!");
         toolbar.setTitleTextColor(Color.WHITE);
         setSupportActionBar(toolbar);
@@ -92,8 +94,10 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                 Loadable game = (Loadable) myGame;
                 game.addMinotaur(new MazePoint(savedInstanceState.getString(MINOTAUR)));
                 game.addTheseus(new MazePoint(savedInstanceState.getString(THESEUS)));
+                showPauseButton();
+                setMoves();
             }
-            // TODO: 24/06/2017 solution
+            checkSolutionOnCreate = savedInstanceState.getBoolean(SOLUTION);
         }
     }
 
@@ -107,6 +111,11 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     public boolean onCreateOptionsMenu(Menu menu){
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.toolbar_options_menu, menu);
+        nav_save = menu.getItem(2);
+        nav_loadSave = menu.getItem(1);
+        nav_loadSave.setEnabled(myLoader.saveGameExists(this));
+        nav_solutions = menu.getItem(3);
+        nav_solutions.setChecked(checkSolutionOnCreate);
         return true;
     }
 
@@ -115,12 +124,14 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         int id = item.getItemId();
         if (id == R.id.nav_load) {
             makeLevelSelectDialog();
+            nav_save.setEnabled(true);
         } else if (id == R.id.nav_save) {
             if (gameIsLive()) {
                 saveThisGame();
+                nav_loadSave.setEnabled(true);
             }
         } else if (id == R.id.nav_load_saved) {
-            // TODO: 23/06/2017  
+            loadLevelFromSaveFile();
         } else if (id == R.id.nav_solution) {
             if (item.isChecked()) {
                 item.setChecked(false);
@@ -143,13 +154,11 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             int currentGame = myLoader.getCurrentLevel();
             String theseusCurrent = myGame.wheresTheseus().toString();
             String minotaurCurrent = myGame.wheresMinotaur().toString();
-            //MenuItem solution = (MenuItem) findViewById(R.id.nav_solution);
             outState.putInt(CURRENT, currentGame);
             outState.putString(MINOTAUR, minotaurCurrent);
             outState.putString(THESEUS, theseusCurrent);
-            //outState.putBoolean(SOLUTION, solution.isChecked());
-            // TODO: 24/06/2017 solution
         }
+        outState.putBoolean(SOLUTION, nav_solutions.isChecked());
     }
 
     protected void saveThisGame() {
@@ -161,7 +170,8 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         if (gameIsLive()) {
             mySolver.createGameState((Savable)myGame);
             mySolver.begin();
-            // TODO: 23/06/2017
+            solutionView.setSolution(mySolver.getSolution());
+            solutionView.invalidate();
         }
     }
 
@@ -193,11 +203,18 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         return myLoader.getLevelNamesFromFile(inputStream);
     }
 
-    public void loadLevelFromResourceFile(int level) {
+    protected void loadLevelFromResourceFile(int level) {
         InputStream inputStream = getResources().openRawResource(R.raw.levels);
         Loadable theGame = new MazeGame();
         myLoader.loadLevel(theGame, level, inputStream);
         myGame = (Game)theGame;
+    }
+
+    protected void loadLevelFromSaveFile() {
+        Loadable theGame = new MazeGame();
+        myLoader.loadSave(theGame, this);
+        myGame = (Game)theGame;
+        startGame();
     }
 
     protected void startGame() {
@@ -217,11 +234,14 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             }
         }
 
-        theView.setTheseusMood(myGame.isWon() ? Mood.HAPPY : Mood.NORMAL);
-        theView.setTheseusPosition(myGame.wheresTheseus());
+        setTheseus();
         theView.setMinotaur(myGame.wheresMinotaur());
-        theView.setMoves(myGame.getMoveCount());
         theView.invalidate();
+        setMoves();
+
+        if (nav_solutions.isChecked()) {
+            turnSolutionOn();
+        }
     }
 
     protected void showPauseButton() {
@@ -229,46 +249,60 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         pause.setVisibility(View.VISIBLE);
     }
 
-    protected void playMove(Direction direction) {
+    protected void playMove(final Direction direction) {
         if (gameIsLive()) {
             if (myGame.moveTheseus(direction)) {
                 setTheseus();
+                setMoves();
                 if (myGame.isWon()) {
                     showGameEndDialog("You won!", "What do you want to do now?");
                 }  else if (myGame.isLost()) {
                     doEndGame();
                 } else {
                     moveMinotaur(true);
+                    if (nav_solutions.isChecked()) {
+                        progressSolution(direction);
+                    }
                 }
             }
         }
     }
 
-    protected void setTheseus() {
-        if (myGame.isWon()) {
-            theView.setTheseusMood(Mood.HAPPY);
+    protected void progressSolution(Direction direction) {
+        if (solutionView.getNextMove() == direction) {
+            solutionView.popAndDraw();
         } else {
-            theView.setTheseusMood(Mood.NORMAL);
+            turnSolutionOn();
         }
+    }
+
+    protected void setMoves() {
+        toolbar.setTitle("Moves: " + myGame.getMoveCount());
+    }
+
+    protected void setTheseus() {
+        theView.setTheseusMood(myGame.isWon() ? Mood.HAPPY : Mood.NORMAL);
         theView.setTheseusPosition(myGame.wheresTheseus());
-        theView.setMoves(myGame.getMoveCount());
         theView.invalidate();
     }
 
     protected void moveMinotaur(final boolean repeat) {
+        myGame.moveMinotaur();
+        minotaurAnimation();
+        if (myGame.isLost()) {
+            doEndGame();
+        } else if (repeat) {
+            moveMinotaur(false);
+        }
+    }
+
+    protected void minotaurAnimation() {
         Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                myGame.moveMinotaur();
                 theView.setMinotaur(myGame.wheresMinotaur());
                 theView.invalidate();
-
-                if (myGame.isLost()) {
-                    doEndGame();
-                } else if (repeat) {
-                    moveMinotaur(false);
-                }
             }
         }, 300);
     }

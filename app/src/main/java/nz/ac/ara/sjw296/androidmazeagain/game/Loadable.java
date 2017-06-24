@@ -22,4 +22,6 @@ public interface Loadable {
     void addExit(Point where);
 
     void setName(String name);
+
+    void setMoveCount(int moveCount);
 }

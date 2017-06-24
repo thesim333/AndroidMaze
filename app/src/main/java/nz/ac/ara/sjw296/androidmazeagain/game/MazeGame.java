@@ -92,6 +92,10 @@ public class MazeGame implements Savable, Loadable, Game {
         return (thisWall == Wall.SOMETHING);
     }
 
+    public void setMoveCount(int moveCount) {
+        this.moveCount = moveCount;
+    }
+
     public int getMoveCount() {
         return moveCount;
     }

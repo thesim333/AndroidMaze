@@ -32,9 +32,8 @@ public class MazeGameView extends View implements MazeView {
     private Point minotaur;
     private Mood theseusMood = Mood.NORMAL;
     private Paint linePaint = new Paint();
-    private int paddingLeft;
-    private int paddingTop;
-    private int moves = -1;
+    private int paddingLeft = 30;
+    private int paddingTop = (getResources().getConfiguration().orientation == 1) ? 150 : 30;
     private Paint movesPaint = new Paint();
     private CommunalImageTools imageTools = new CommunalImageTools();
     private int rows;
@@ -78,12 +77,20 @@ public class MazeGameView extends View implements MazeView {
     public void newGameSetup(int rows, int cols) {
         this.rows = rows;
         this.cols = cols;
-        lineLength = (int)((getMeasuredWidth() < getMeasuredHeight() ? getMeasuredWidth() : getMeasuredHeight() * .9) / rows);
+        setLineLength();
         setImageNumbers();
-        paddingTop = (getMeasuredHeight() - rows * lineLength) / 2 + 50;
-        paddingLeft = (getMeasuredWidth() - cols * lineLength) / 2;
         leftWalls = new ArrayList<>();
         topWalls = new ArrayList<>();
+    }
+
+    private void setLineLength() {
+        int size;
+        if (getResources().getConfiguration().orientation == 1) {
+            size = getMeasuredWidth() - 256;
+        } else {
+            size = getMeasuredHeight();
+        }
+        lineLength = (int)(size * .9 / rows);
     }
 
     public void addLeftWall(Point p) {
@@ -104,10 +111,6 @@ public class MazeGameView extends View implements MazeView {
 
     public void setMinotaur(Point p) {
         minotaur = new MazePoint(p);
-    }
-
-    public void setMoves(int moves) {
-        this.moves = moves;
     }
 
     private int setCorrectTheseusImage() {
@@ -132,7 +135,7 @@ public class MazeGameView extends View implements MazeView {
     @Override
     protected void onDraw(Canvas canvas) {
         canvas.drawColor(0xFFBBBBBB);
-        if (moves >= 0) {
+        if (leftWalls != null) {
             Bitmap bitmapSrcTheseus = imageTools.decodeSampledBitmapFromResource(getResources(), setCorrectTheseusImage(), imageSize, imageSize);
             float theseusX = getImageLocation(theseus.getCol()) + paddingLeft;
             float theseusY = getImageLocation(theseus.getRow()) + paddingTop;
@@ -143,7 +146,7 @@ public class MazeGameView extends View implements MazeView {
             float minotaurY = getImageLocation(minotaur.getRow()) + paddingTop;
             //canvas.drawBitmap(bitmapSrcMinotaur, minotaurX, minotaurY, null);
             canvas.drawBitmap(bitmapSrcMinotaur, null, getImageRectF(minotaurX, minotaurY), null);
-            canvas.drawText("Moves: " + String.valueOf(moves), 30, 60, movesPaint);
+            //canvas.drawText("Moves: " + String.valueOf(moves), 30, 60, movesPaint);
 
             for (Point p:
                     topWalls) {
@@ -186,26 +189,17 @@ public class MazeGameView extends View implements MazeView {
         lineLength = l;
     }
 
-    private void setPaddingTop(int pt) {
-        paddingTop = pt;
-    }
-
-    private void setPaddingLeft(int pl) {
-        paddingLeft = pl;
-    }
-
     @Override
     public Parcelable onSaveInstanceState() {
         Parcelable superState = super.onSaveInstanceState();
         SavedState ss = new SavedState(superState);
-        ss.lineLength = lineLength;
-        ss.paddingTop = paddingTop;
-        ss.paddingLeft = paddingLeft;
-        ss.moves = moves;
-        ss.theseus = theseus.toString();
-        ss.minotaur = minotaur.toString();
-        ss.leftWalls = leftWalls;
-        ss.topWalls = topWalls;
+        if (theseus != null) {
+            ss.lineLength = lineLength;
+            ss.theseus = theseus.toString();
+            ss.minotaur = minotaur.toString();
+            ss.leftWalls = leftWalls;
+            ss.topWalls = topWalls;
+        }
         return ss;
     }
 
@@ -213,23 +207,21 @@ public class MazeGameView extends View implements MazeView {
     public void onRestoreInstanceState(Parcelable state) {
         SavedState ss = (SavedState) state;
         super.onRestoreInstanceState(ss.getSuperState());
-        setLineLength(ss.lineLength);
-        setPaddingTop(ss.paddingTop);
-        setPaddingLeft(ss.paddingLeft);
-        setImageNumbers();
-        setMoves(ss.moves);
-        setTheseusPosition(new MazePoint(ss.theseus));
-        setMinotaur(new MazePoint(ss.minotaur));
-        setLeftWalls(ss.leftWalls);
-        setTopWalls(ss.topWalls);
-        invalidate();
+        try {
+            setLineLength(ss.lineLength);
+            setImageNumbers();
+            setTheseusPosition(new MazePoint(ss.theseus));
+            setMinotaur(new MazePoint(ss.minotaur));
+            setLeftWalls(ss.leftWalls);
+            setTopWalls(ss.topWalls);
+            invalidate();
+        } catch (Exception e){
+            e.printStackTrace();
+        }
     }
 
     private static class SavedState extends BaseSavedState {
         int lineLength;
-        int paddingTop;
-        int paddingLeft;
-        int moves;
         String theseus;
         String minotaur;
         List<Point> leftWalls;
@@ -242,9 +234,6 @@ public class MazeGameView extends View implements MazeView {
         private SavedState(Parcel in) {
             super(in);
             lineLength = in.readInt();
-            paddingTop = in.readInt();
-            paddingLeft = in.readInt();
-            moves = in.readInt();
             theseus = in.readString();
             minotaur = in.readString();
             in.readList(leftWalls, Point.class.getClassLoader());
@@ -255,9 +244,6 @@ public class MazeGameView extends View implements MazeView {
         public void writeToParcel(Parcel out, int flags) {
             super.writeToParcel(out, flags);
             out.writeInt(lineLength);
-            out.writeInt(paddingTop);
-            out.writeInt(paddingLeft);
-            out.writeInt(moves);
             out.writeString(theseus);
             out.writeString(minotaur);
             out.writeList(leftWalls);

@@ -24,4 +24,6 @@ public interface Loader {
     String[] getLevelNamesFromFile(InputStream inputStream);
 
     int getCurrentLevel();
+
+    boolean saveGameExists(Context context);
 }

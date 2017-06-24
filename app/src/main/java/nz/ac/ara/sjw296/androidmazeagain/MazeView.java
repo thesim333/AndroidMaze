@@ -19,7 +19,5 @@ public interface MazeView {
 
     void setMinotaur(Point p);
 
-    void setMoves(int moves);
-
     void invalidate();
 }

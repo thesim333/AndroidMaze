@@ -23,4 +23,6 @@ public interface Savable {
     Point wheresExit();
 
     String getLevelName();
+
+    int getMoveCount();
 }

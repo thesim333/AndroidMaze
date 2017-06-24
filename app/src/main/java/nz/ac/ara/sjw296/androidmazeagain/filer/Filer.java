@@ -126,7 +126,8 @@ public class Filer implements Loader, Saver {
         this.addPositionNode(doc, positionsElement, "theseus", game.wheresTheseus());
         this.addPositionNode(doc, positionsElement, "minotaur", game.wheresMinotaur());
         this.addPositionNode(doc, positionsElement, "exit", game.wheresExit());
-
+        Element moves = this.makeNode(doc, mazeElement, "moves");
+        addTextToNode(doc, moves, String.valueOf(game.getMoveCount()));
         this.saveXmlToFile(doc, fileName, context);
     }
 
@@ -219,7 +220,7 @@ public class Filer implements Loader, Saver {
 
     @Override
     public void loadLevel(Loadable game, int level, InputStream inputStream) {
-        this.loadLevelOrLoadSaveByNumber(game, level, getXmlDoc(inputStream));
+        this.loadLevelOrLoadSaveByNumber(game, level, getXmlDoc(inputStream), false);
     }
 
     protected NodeList getMazeList(Document doc) {
@@ -234,7 +235,7 @@ public class Filer implements Loader, Saver {
         return null;
     }
 
-    protected void loadLevelOrSaveIntoGame(Loadable game, Element mazeElement) {
+    protected void loadLevelOrSaveIntoGame(Loadable game, Element mazeElement, boolean moves) {
         //get name
         game.setName(mazeElement.getElementsByTagName("name").item(0).getTextContent());
         //get rows
@@ -255,26 +256,29 @@ public class Filer implements Loader, Saver {
         game.addTheseus(this.getPosition(positions, "theseus"));
         //get exit
         game.addExit(this.getPosition(positions, "exit"));
+        if (moves) {
+            game.setMoveCount(Integer.parseInt(mazeElement.getElementsByTagName("moves").item(0).getTextContent()));
+        }
     }
 
-    protected void loadLevelOrLoadSaveByName(Loadable game, String level, Document doc) {
+    protected void loadLevelOrLoadSaveByName(Loadable game, String level, Document doc, boolean moves) {
         NodeList mazeList = this.getMazeList(doc);
 
         for (int i = 0; i < mazeList.getLength(); i++) {
             Element currentElement = (Element)mazeList.item(i);
             if (currentElement.getElementsByTagName("name").item(0).getTextContent().equals(level)) {
-                this.loadLevelOrSaveIntoGame(game, currentElement);
+                this.loadLevelOrSaveIntoGame(game, currentElement, moves);
             }
         }
     }
 
-    protected void loadLevelOrLoadSaveByNumber(Loadable game, int level, Document doc) {
+    protected void loadLevelOrLoadSaveByNumber(Loadable game, int level, Document doc, boolean moves) {
 //        Document doc = this.getXmlDoc(fileName);
         NodeList mazeList = this.getMazeList(doc);
         int levelToLoad = level % mazeList.getLength();
         Node mazeNode = mazeList.item(levelToLoad);
         Element mazeElement = (Element)mazeNode;
-        this.loadLevelOrSaveIntoGame(game, mazeElement);
+        this.loadLevelOrSaveIntoGame(game, mazeElement, moves);
     }
 
     protected NodeList getWallsList(Element maze, String type) {
@@ -330,7 +334,7 @@ public class Filer implements Loader, Saver {
     public void loadSave(Loadable game, String fileName, Context context) {
         try {
             InputStream inputStream = context.openFileInput(fileName);
-            this.loadLevelOrLoadSaveByNumber(game, 0, getXmlDoc(inputStream));
+            this.loadLevelOrLoadSaveByNumber(game, 0, getXmlDoc(inputStream), true);
         }
         catch (IOException e) {
             e.getCause();
@@ -346,7 +350,7 @@ public class Filer implements Loader, Saver {
     public void loadSave(Loadable game, String fileName, String level, Context context) {
         try {
             InputStream inputStream = context.openFileInput(fileName);
-            this.loadLevelOrLoadSaveByName(game, level, getXmlDoc(inputStream));
+            this.loadLevelOrLoadSaveByName(game, level, getXmlDoc(inputStream), true);
         }
         catch (IOException e) {
             e.getCause();
@@ -370,5 +374,17 @@ public class Filer implements Loader, Saver {
     @Override
     public int getCurrentLevel() {
         return currentLevel;
+    }
+
+    @Override
+    public boolean saveGameExists(Context context) {
+        int names = 0;
+        try {
+            InputStream inputStream = context.openFileInput(SAVE_FILE);
+            names = getLevelNamesFromFile(inputStream).length;
+        } catch (IOException e) {
+            e.getCause();
+        }
+        return names > 0;
     }
 }

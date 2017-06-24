@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
+import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewTreeObserver;
@@ -22,11 +23,10 @@ public class GameSolutionView extends View implements SolutionView {
     protected List<Direction> theSolution;
     protected String orientation;
     private CommunalImageTools imageTools = new CommunalImageTools();
-    private int imageSize = 84;
+    private int imageSize = 200;
     private int imageSpace = 8;
     private final String VERTICAL = "Vertical";
     private final String HORIZONTAL = "Horizontal";
-    float startingPoint = imageSpace + imageSize / 2;
 
     public GameSolutionView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -69,51 +69,47 @@ public class GameSolutionView extends View implements SolutionView {
     
     protected Bitmap getImageForDirection(Direction d) {
         int resource;
-
-        if (d == Direction.PASS) {
-            resource = R.drawable.move_type_skip;
-        } else {
-            resource = R.drawable.move_type_right;
+        switch(d) {
+            case UP:
+                resource = R.drawable.move_type_up;
+                break;
+            case DOWN:
+                resource = R.drawable.move_type_down;
+                break;
+            case LEFT:
+                resource = R.drawable.move_type_left;
+                break;
+            case RIGHT:
+                resource = R.drawable.move_type_right;
+                break;
+            default:
+                resource = R.drawable.move_type_skip;
         }
 
+        return getImage(resource);
+    }
+
+    protected Bitmap getImage(int resource) {
         return imageTools.decodeSampledBitmapFromResource(getResources(), resource, imageSize, imageSize);
     }
 
-    protected Matrix getImageRotationMatrix(Direction d, float x, float y) {
-        float deg = 0;
-        switch (d) {
-            case DOWN:
-                deg = 90;
-                break;
-            case LEFT:
-                deg = 180;
-                break;
-            case UP:
-                deg = 270;
-                break;
-        }
-
-        Matrix matrix = new Matrix();
-        matrix.reset();
-        matrix.postTranslate(imageSize / 2, imageSize / 2);
-        matrix.postRotate(deg);
-        matrix.postTranslate(x, y);
-        return matrix;
+    private RectF getImageRectF(float x, float y) {
+        return new RectF(x, y, x + imageSize, y + imageSize);
     }
 
     private float getImageX(int count) {
-        if (orientation == VERTICAL) {
-            return startingPoint;
+        if (orientation.equals(VERTICAL)) {
+            return imageSpace;
         } else {
-            return startingPoint + (imageSpace + imageSize) * count;
+            return imageSpace + (imageSpace + imageSize) * count;
         }
     }
 
     private float getImageY(int count) {
-        if (orientation == HORIZONTAL) {
-            return startingPoint;
+        if (orientation.equals(HORIZONTAL)) {
+            return imageSpace;
         } else {
-            return startingPoint + (imageSpace + imageSize) * count;
+            return imageSpace + (imageSpace + imageSize) * count;
         }
     }
 
@@ -126,10 +122,13 @@ public class GameSolutionView extends View implements SolutionView {
             for (Direction d:
                     theSolution) {
                 Bitmap image = getImageForDirection(d);
-                Matrix matrix = getImageRotationMatrix(d, getImageX(count), getImageY(count));
-                canvas.drawBitmap(image, matrix, null);
+                canvas.drawBitmap(image, null, getImageRectF(getImageX(count), getImageY(count)), null);
                 count++;
             }
+        }
+        else if (showSolution) {
+            Bitmap image = getImage(R.drawable.danger);
+            canvas.drawBitmap(image, null, getImageRectF(getImageX(0), getImageY(0)), null);
         }
     }
 }

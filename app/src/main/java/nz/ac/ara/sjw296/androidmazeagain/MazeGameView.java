@@ -170,12 +170,14 @@ public class MazeGameView extends View implements MazeView {
         setLineLength();
         setImageNumbers();
         if (mLeftWalls != null) {
-            Bitmap bitmapSrcTheseus = mImageTools.decodeSampledBitmapFromResource(getResources(), setCorrectTheseusImage(), mImageSize, mImageSize);
+            Bitmap bitmapSrcTheseus = mImageTools.decodeSampledBitmapFromResource(getResources(),
+                    setCorrectTheseusImage(), mImageSize, mImageSize);
             float theseusX = getImageLocation(mTheseus.getCol()) + mPaddingLeft;
             float theseusY = getImageLocation(mTheseus.getRow()) + mPaddingTop;
             //canvas.drawBitmap(bitmapSrcTheseus, theseusX, theseusY, null);
             canvas.drawBitmap(bitmapSrcTheseus, null, getImageRectF(theseusX, theseusY), null);
-            Bitmap bitmapSrcMinotaur = mImageTools.decodeSampledBitmapFromResource(getResources(), R.drawable.minotaur, mImageSize, mImageSize);
+            Bitmap bitmapSrcMinotaur = mImageTools.decodeSampledBitmapFromResource(getResources(),
+                    R.drawable.minotaur, mImageSize, mImageSize);
             float minotaurX = getImageLocation(mMinotaur.getCol()) + mPaddingLeft;
             float minotaurY = getImageLocation(mMinotaur.getRow()) + mPaddingTop;
             //canvas.drawBitmap(bitmapSrcMinotaur, minotaurX, minotaurY, null);

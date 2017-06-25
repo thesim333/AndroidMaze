@@ -3,6 +3,10 @@ package nz.ac.ara.sjw296.androidmazeagain.swipe;
 import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.MotionEvent;
 
+/**
+ * Swipe library that I borrowed from the internet
+ * Thought it was brilliant and better than I would have written at the time.
+ */
 public class OnSwipeListener extends SimpleOnGestureListener {
     @Override
     public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {

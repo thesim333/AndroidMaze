@@ -50,6 +50,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     final String MINOTAUR = "Minotaur";
     final String THESEUS = "Theseus";
     final String SOLUTION = "Solution";
+    final String MOVES = "Moves";
     private Toolbar mToolbar;
     private MenuItem mNav_loadSave;
     private MenuItem mNav_save;
@@ -58,7 +59,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
     /**
      * Creates the activity on start, restore (rotate).
-     * @param savedInstanceState
+     * @param savedInstanceState The saved state of this activity when restoring
      */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -121,6 +122,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             Loadable game = (Loadable) mMyGame;
             game.addMinotaur(new MazePoint(savedInstanceState.getString(MINOTAUR)));
             game.addTheseus(new MazePoint(savedInstanceState.getString(THESEUS)));
+            game.setMoveCount(savedInstanceState.getInt(MOVES));
             showPauseButton();
             setMoves();
         }
@@ -166,7 +168,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         int id = item.getItemId();
         if (id == R.id.nav_load) {
             makeLevelSelectDialog();
-            mNav_save.setEnabled(true);
         } else if (id == R.id.nav_save) {
             if (gameIsLive()) {
                 saveThisGame();
@@ -203,6 +204,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             outState.putInt(CURRENT, currentGame);
             outState.putString(MINOTAUR, minotaurCurrent);
             outState.putString(THESEUS, theseusCurrent);
+            outState.putInt(MOVES, mMyGame.getMoveCount());
         }
         outState.putBoolean(SOLUTION, mNav_solutions.isChecked());
     }
@@ -265,6 +267,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
     private void startGame() {
         showPauseButton();
+        mNav_save.setEnabled(true);
         int rows = mMyGame.getDepthDown();
         int cols = mMyGame.getWidthAcross();
         mMyGameView.newGameSetup(rows, cols);

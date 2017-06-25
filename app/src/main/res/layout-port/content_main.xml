@@ -35,13 +35,13 @@
     <nz.ac.ara.sjw296.androidmazeagain.GameSolutionView
         android:id="@+id/solutionView"
         android:layout_width="0dp"
-        android:layout_height="100dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="8dp"
+        android:layout_height="150dp"
         android:layout_marginBottom="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/mazeView"/>
+        app:layout_constraintTop_toBottomOf="@+id/mazeView" />
 
 </android.support.constraint.ConstraintLayout>

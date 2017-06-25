@@ -15,7 +15,7 @@ public interface MazeView {
 
     void setTheseusPosition(Point p);
 
-    void setTheseusMood(Mood theseusMood);
+    void setTheseusMood(Mood mTheseusMood);
 
     void setMinotaur(Point p);
 

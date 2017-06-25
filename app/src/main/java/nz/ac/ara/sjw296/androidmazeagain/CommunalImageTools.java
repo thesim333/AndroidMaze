@@ -5,11 +5,11 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 
 /**
- * Created by Sim on 23/06/2017.
+ * Tools for presenting Bitmap images from drawable resources
+ * for drawing on view canvas.
  */
-
-public class CommunalImageTools {
-    public Bitmap decodeSampledBitmapFromResource(Resources res, int resId,
+class CommunalImageTools {
+    Bitmap decodeSampledBitmapFromResource(Resources res, int resId,
                                                          int reqWidth, int reqHeight) {
         // First decode with inJustDecodeBounds=true to check dimensions
         final BitmapFactory.Options options = new BitmapFactory.Options();
@@ -24,8 +24,7 @@ public class CommunalImageTools {
         return BitmapFactory.decodeResource(res, resId, options);
     }
 
-    private int calculateInSampleSize(
-            BitmapFactory.Options options, int reqWidth, int reqHeight) {
+    private int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {
         // Raw height and width of image
         final int height = options.outHeight;
         final int width = options.outWidth;

@@ -3,6 +3,7 @@ package nz.ac.ara.sjw296.androidmazeagain;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.graphics.Color;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
@@ -32,38 +33,60 @@ import nz.ac.ara.sjw296.androidmazeagain.solver.Sandbox;
 import nz.ac.ara.sjw296.androidmazeagain.solver.SandboxGame;
 import nz.ac.ara.sjw296.androidmazeagain.swipe.OnSwipeListener;
 
+/**
+ * The main activity that acts as a presenter for this app.
+ * Controls the 2 views that show the game and the solution.
+ * Controls data interaction the models the run the game and solution.
+ * @author Simon Winder
+ */
 public class MainActivity extends AppCompatActivity implements View.OnTouchListener {
-    protected Loader myLoader = new Filer();
-    protected Game myGame;
-    protected Sandbox mySolver = new SandboxGame();
-    protected MazeView theView;
-    protected SolutionView solutionView;
-    protected GestureDetector detector;
+    private Loader mMyLoader = new Filer();
+    private Game mMyGame;
+    private Sandbox mMySolver = new SandboxGame();
+    private MazeView mMyGameView;
+    private SolutionView mMySolutionView;
+    private GestureDetector mDetector;
     final String CURRENT = "Current";
     final String MINOTAUR = "Minotaur";
     final String THESEUS = "Theseus";
     final String SOLUTION = "Solution";
-    protected Toolbar toolbar;
-    protected MenuItem nav_loadSave;
-    protected MenuItem nav_save;
-    protected MenuItem nav_solutions;
-    protected boolean checkSolutionOnCreate = false;
+    private Toolbar mToolbar;
+    private MenuItem mNav_loadSave;
+    private MenuItem mNav_save;
+    private MenuItem mNav_solutions;
+    private boolean mCheckSolutionOnCreate = false;
 
+    /**
+     * Creates the activity on start, restore (rotate).
+     * @param savedInstanceState
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        setupToolbar();
+        setupViews();
+        setPauseButton();
 
-        toolbar = (Toolbar) findViewById(R.id.toolbar);
-        toolbar.setTitle("Escape!");
-        toolbar.setTitleTextColor(Color.WHITE);
-        setSupportActionBar(toolbar);
-        toolbar.setBackgroundColor(Color.parseColor("#555555"));
+        if (savedInstanceState != null) {
+            restoreActivity(savedInstanceState);
+        }
+    }
+
+    private void setupToolbar() {
+        mToolbar = (Toolbar) findViewById(R.id.toolbar);
+        mToolbar.setTitle("Escape!");
+        mToolbar.setTitleTextColor(Color.WHITE);
+        setSupportActionBar(mToolbar);
+        mToolbar.setBackgroundColor(Color.parseColor("#555555"));
+    }
+
+    private void setupViews() {
         MazeGameView view = (MazeGameView) findViewById(R.id.mazeView);
         view.setOnTouchListener(this);
-        theView = view;
-        solutionView = (SolutionView)findViewById(R.id.solutionView);
-        detector = new GestureDetector(this, new OnSwipeListener() {
+        mMyGameView = view;
+        mMySolutionView = (SolutionView)findViewById(R.id.solutionView);
+        mDetector = new GestureDetector(this, new OnSwipeListener() {
             @Override
             public boolean onSwipe(SwipeDirection direction) {
                 if (direction == SwipeDirection.up){
@@ -81,54 +104,73 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                 return true;
             }
         });
+    }
+
+    private void setPauseButton() {
         final Button button = (Button) findViewById(R.id.pause_button);
         button.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 playMove(Direction.PASS);
             }
         });
-
-        if (savedInstanceState != null) {
-            if (savedInstanceState.containsKey(MINOTAUR)) {
-                loadLevelFromResourceFile(savedInstanceState.getInt(CURRENT));
-                Loadable game = (Loadable) myGame;
-                game.addMinotaur(new MazePoint(savedInstanceState.getString(MINOTAUR)));
-                game.addTheseus(new MazePoint(savedInstanceState.getString(THESEUS)));
-                showPauseButton();
-                setMoves();
-            }
-            checkSolutionOnCreate = savedInstanceState.getBoolean(SOLUTION);
-        }
     }
 
+    private void restoreActivity(Bundle savedInstanceState) {
+        if (savedInstanceState.containsKey(MINOTAUR)) {
+            loadLevelFromResourceFile(savedInstanceState.getInt(CURRENT));
+            Loadable game = (Loadable) mMyGame;
+            game.addMinotaur(new MazePoint(savedInstanceState.getString(MINOTAUR)));
+            game.addTheseus(new MazePoint(savedInstanceState.getString(THESEUS)));
+            showPauseButton();
+            setMoves();
+        }
+        mCheckSolutionOnCreate = savedInstanceState.getBoolean(SOLUTION);
+    }
+
+    /**
+     * Event handler for touching view this activity handles touching for
+     * @param v the view
+     * @param event what?
+     * @return happened
+     */
     @Override
     public boolean onTouch(View v, MotionEvent event) {
-        detector.onTouchEvent(event);
+        mDetector.onTouchEvent(event);
         return true;
     }
 
+    /**
+     * Creating the menu
+     * @param menu The menu belonging to the toolbar
+     * @return happened
+     */
     @Override
     public boolean onCreateOptionsMenu(Menu menu){
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.toolbar_options_menu, menu);
-        nav_save = menu.getItem(2);
-        nav_loadSave = menu.getItem(1);
-        nav_loadSave.setEnabled(myLoader.saveGameExists(this));
-        nav_solutions = menu.getItem(3);
-        nav_solutions.setChecked(checkSolutionOnCreate);
+        mNav_save = menu.getItem(2);
+        mNav_loadSave = menu.getItem(1);
+        mNav_loadSave.setEnabled(mMyLoader.saveGameExists(this));
+        mNav_solutions = menu.getItem(3);
+        mNav_solutions.setChecked(mCheckSolutionOnCreate);
         return true;
     }
 
+    /**
+     * What happens when the menu options are touched
+     * @param item which menu item was touched
+     * @return the parent event
+     */
     @Override
     public boolean onOptionsItemSelected(MenuItem item){
         int id = item.getItemId();
         if (id == R.id.nav_load) {
             makeLevelSelectDialog();
-            nav_save.setEnabled(true);
+            mNav_save.setEnabled(true);
         } else if (id == R.id.nav_save) {
             if (gameIsLive()) {
                 saveThisGame();
-                nav_loadSave.setEnabled(true);
+                mNav_loadSave.setEnabled(true);
             }
         } else if (id == R.id.nav_load_saved) {
             loadLevelFromSaveFile();
@@ -146,44 +188,48 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         return super.onOptionsItemSelected(item);
     }
 
+    /**
+     * Saves the activity through rotates and other destruction events
+     * @param outState holds all variables needed to redraw
+     */
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         //game
         if (gameIsLive()) {
-            int currentGame = myLoader.getCurrentLevel();
-            String theseusCurrent = myGame.wheresTheseus().toString();
-            String minotaurCurrent = myGame.wheresMinotaur().toString();
+            int currentGame = mMyLoader.getCurrentLevel();
+            String theseusCurrent = mMyGame.wheresTheseus().toString();
+            String minotaurCurrent = mMyGame.wheresMinotaur().toString();
             outState.putInt(CURRENT, currentGame);
             outState.putString(MINOTAUR, minotaurCurrent);
             outState.putString(THESEUS, theseusCurrent);
         }
-        outState.putBoolean(SOLUTION, nav_solutions.isChecked());
+        outState.putBoolean(SOLUTION, mNav_solutions.isChecked());
     }
 
-    protected void saveThisGame() {
+    private void saveThisGame() {
         Saver saver = new Filer();
-        saver.save((Savable)myGame, this);
+        saver.save((Savable) mMyGame, this);
     }
 
-    protected void turnSolutionOn() {
+    private void turnSolutionOn() {
         if (gameIsLive()) {
-            mySolver.createGameState((Savable)myGame);
-            mySolver.begin();
-            solutionView.setSolution(mySolver.getSolution());
-            solutionView.invalidate();
+            mMySolver.createGameState((Savable) mMyGame);
+            mMySolver.begin();
+            mMySolutionView.setSolution(mMySolver.getSolution());
+            mMySolutionView.invalidate();
         }
     }
 
-    protected void turnSolutionOff() {
-        solutionView.stopShowingSolution();
+    private void turnSolutionOff() {
+        mMySolutionView.stopShowingSolution();
     }
 
-    protected boolean gameIsLive() {
-        return (myGame != null && !myGame.isLost() && !myGame.isWon());
+    private boolean gameIsLive() {
+        return (mMyGame != null && !mMyGame.isLost() && !mMyGame.isWon());
     }
 
-    protected void makeLevelSelectDialog() {
+    private void makeLevelSelectDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Select Level");
         builder.setItems(getLevelNamesList(), new DialogInterface.OnClickListener() {
@@ -197,70 +243,71 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         alert.show();
     }
 
-    protected String[] getLevelNamesList() {
+    private String[] getLevelNamesList() {
         InputStream inputStream = getResources().openRawResource(R.raw.levels);
         Loader myLoader = new Filer();
         return myLoader.getLevelNamesFromFile(inputStream);
     }
 
-    protected void loadLevelFromResourceFile(int level) {
+    private void loadLevelFromResourceFile(int level) {
         InputStream inputStream = getResources().openRawResource(R.raw.levels);
         Loadable theGame = new MazeGame();
-        myLoader.loadLevel(theGame, level, inputStream);
-        myGame = (Game)theGame;
+        mMyLoader.loadLevel(theGame, level, inputStream);
+        mMyGame = (Game)theGame;
     }
 
-    protected void loadLevelFromSaveFile() {
+    private void loadLevelFromSaveFile() {
         Loadable theGame = new MazeGame();
-        myLoader.loadSave(theGame, this);
-        myGame = (Game)theGame;
+        mMyLoader.loadSave(theGame, this);
+        mMyGame = (Game)theGame;
         startGame();
     }
 
-    protected void startGame() {
+    private void startGame() {
         showPauseButton();
-        int rows = myGame.getDepthDown();
-        int cols = myGame.getWidthAcross();
-        theView.newGameSetup(rows, cols);
+        int rows = mMyGame.getDepthDown();
+        int cols = mMyGame.getWidthAcross();
+        mMyGameView.newGameSetup(rows, cols);
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
                 Point p = new MazePoint(r, c);
-                if (myGame.whatsAbove(p) == Wall.SOMETHING) {
-                    theView.addTopWall(p);
+                if (mMyGame.whatsAbove(p) == Wall.SOMETHING) {
+                    mMyGameView.addTopWall(p);
                 }
-                if (myGame.whatsLeft(p) == Wall.SOMETHING) {
-                    theView.addLeftWall(p);
+                if (mMyGame.whatsLeft(p) == Wall.SOMETHING) {
+                    mMyGameView.addLeftWall(p);
                 }
             }
         }
 
         setTheseus();
-        theView.setMinotaur(myGame.wheresMinotaur());
-        theView.invalidate();
+        mMyGameView.setMinotaur(mMyGame.wheresMinotaur());
+        mMyGameView.invalidate();
         setMoves();
 
-        if (nav_solutions.isChecked()) {
+        if (mNav_solutions.isChecked()) {
             turnSolutionOn();
         }
     }
 
-    protected void showPauseButton() {
+    private void showPauseButton() {
         Button pause = (Button) findViewById(R.id.pause_button);
         pause.setVisibility(View.VISIBLE);
     }
 
-    protected void playMove(final Direction direction) {
+    private void playMove(final Direction direction) {
         if (gameIsLive()) {
-            if (myGame.moveTheseus(direction)) {
+            if (mMyGame.moveTheseus(direction)) {
                 setTheseus();
                 setMoves();
-                if (myGame.isWon()) {
+                if (mMyGame.isWon()) {
+                    playSound(R.raw.happy);
                     showGameEndDialog("You won!", "What do you want to do now?");
-                }  else if (myGame.isLost()) {
-                    doEndGame();
+                }  else if (mMyGame.isLost()) {
+                    doLostEndGame();
                 } else {
                     moveMinotaur(true);
-                    if (nav_solutions.isChecked()) {
+                    if (mNav_solutions.isChecked()) {
                         progressSolution(direction);
                     }
                 }
@@ -268,58 +315,73 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         }
     }
 
-    protected void progressSolution(Direction direction) {
-        if (solutionView.getNextMove() == direction) {
-            solutionView.popAndDraw();
+    private void progressSolution(Direction direction) {
+        if (mMySolutionView.getNextMove() == direction) {
+            mMySolutionView.popAndDraw();
         } else {
             turnSolutionOn();
         }
     }
 
-    protected void setMoves() {
-        toolbar.setTitle("Moves: " + myGame.getMoveCount());
+    private void setMoves() {
+        mToolbar.setTitle("Moves: " + mMyGame.getMoveCount());
     }
 
-    protected void setTheseus() {
-        theView.setTheseusMood(myGame.isWon() ? Mood.HAPPY : Mood.NORMAL);
-        theView.setTheseusPosition(myGame.wheresTheseus());
-        theView.invalidate();
+    private void setTheseus() {
+        mMyGameView.setTheseusMood(mMyGame.isWon() ? Mood.HAPPY : Mood.NORMAL);
+        mMyGameView.setTheseusPosition(mMyGame.wheresTheseus());
+        mMyGameView.invalidate();
     }
 
-    protected void moveMinotaur(final boolean repeat) {
-        myGame.moveMinotaur();
+    private void moveMinotaur(final boolean repeat) {
+        mMyGame.moveMinotaur();
         minotaurAnimation();
-        if (myGame.isLost()) {
-            doEndGame();
+        if (mMyGame.isLost()) {
+            doLostEndGame();
         } else if (repeat) {
             moveMinotaur(false);
         }
     }
 
-    protected void minotaurAnimation() {
+    private void minotaurAnimation() {
         Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                theView.setMinotaur(myGame.wheresMinotaur());
-                theView.invalidate();
+                mMyGameView.setMinotaur(mMyGame.wheresMinotaur());
+                mMyGameView.invalidate();
             }
         }, 300);
     }
 
-    protected void doEndGame() {
+    private void doLostEndGame() {
+        playSound(R.raw.sad);
         showGameEndDialog("You were killed by the fearsome minotaur!!!",
                 "How do you want to get revenge?");
     }
 
-    protected void showGameEndDialog(String title, String msg) {
+    private void playSound(int sound) {
+        MediaPlayer mp;
+        mp = MediaPlayer.create(this, sound);
+        mp.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+            @Override
+            public void onCompletion(MediaPlayer mp) {
+                mp.reset();
+                mp.release();
+                mp=null;
+            }
+        });
+        mp.start();
+    }
+
+    private void showGameEndDialog(String title, String msg) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(title);
         builder.setMessage(msg);
         builder.setPositiveButton(R.string.restart, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
-                loadLevelFromResourceFile(myLoader.getCurrentLevel());
+                loadLevelFromResourceFile(mMyLoader.getCurrentLevel());
             }
         });
         builder.setNeutralButton(R.string.load_resource, new DialogInterface.OnClickListener() {
@@ -331,6 +393,4 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         AlertDialog alert = builder.create();
         alert.show();
     }
-
-
 }
